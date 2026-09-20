@@ -136,6 +136,73 @@ function migrateOrphanedDroidsAndBuildings(force)
         Game.print_force(force, string.format("Robot Army: re-registered %d building(s) and adopted %d droid(s) back into squads",
                                               registered, adopted))
     end
+    return adopted
+end
+
+
+-- migration helper: adoption joins each orphan to the nearest squad (or makes a new one), which
+-- leaves lots of small squads scattered around the assemblers. small squads below the hunting
+-- squad size will never attack, and merging in normal play only happens between squads near the
+-- same assembler, so these fragments can sit around forever. this consolidates them: every
+-- squad is merged into the nearest other squad, largest first, until nothing more can combine.
+-- distance cap for migration-time merges: merging squads whose members are far apart would get
+-- the far members kicked out of the merged squad by validateSquadIntegrity (they orphan again),
+-- so only pool squads within this range of each other
+MIGRATION_MERGE_MAX_DISTANCE = 150
+
+-- migration helper: adoption joins each orphan to the nearest squad (or makes a new one), which
+-- leaves lots of small squads scattered around the assemblers. small squads below the hunting
+-- squad size will never attack, and merging in normal play only happens between squads near the
+-- same assembler, so these fragments can sit around forever. this consolidates the idle ones:
+-- each squad is merged into its nearest eligible neighbour, largest first, until nothing more
+-- can combine. guard/patrol/follow squads are left alone, only idle waiting squads are pooled.
+function consolidateMigratedSquads(force)
+    local merged_count = 0
+    local merging = true
+    while merging do
+        merging = false
+        -- build a fresh list each pass, squads get deleted as they merge away
+        local squads = {}
+        for _, squad in pairs(storage.Squads[force.name]) do
+            if squad and not squad.deleted and squad.numMembers and squad.numMembers > 0
+                and (squad.command.type == commands.assemble or squad.command.type == commands.hunt) then
+                table.insert(squads, squad)
+            end
+        end
+        -- largest first so big squads absorb the small ones, keeping their unit group positions
+        table.sort(squads, function(a, b) return a.numMembers > b.numMembers end)
+        for i, squad in pairs(squads) do
+            if squad and not squad.deleted then
+                local other = nil
+                local other_dist = nil
+                for j = i + 1, #squads do
+                    local candidate = squads[j]
+                    if candidate and not candidate.deleted
+                        and candidate.surface == squad.surface
+                        and candidate.unitGroup and candidate.unitGroup.valid
+                        and squad.unitGroup and squad.unitGroup.valid then
+                        local dist = util.distance(squad.unitGroup.position, candidate.unitGroup.position)
+                        if dist <= MIGRATION_MERGE_MAX_DISTANCE and (other == nil or dist < other_dist) then
+                            other = candidate
+                            other_dist = dist
+                        end
+                    end
+                end
+                if other then
+                    local merged = mergeSquads(squad, other)
+                    if merged then
+                        merged_count = merged_count + 1
+                        merging = true -- something merged, another pass might find more
+                    end
+                end
+            end
+        end
+    end
+    if merged_count > 0 then
+        LOGGER.log(string.format("Migration for force %s: consolidated squads in %d merge(s)",
+                                 force.name, merged_count))
+    end
+    return merged_count
 end
 
 function migrateForce(fkey, force)
@@ -147,7 +214,9 @@ function migrateForce(fkey, force)
 
     migrateDroidAssemblersTo_0_2_4(force)
     reEnableRecipesForResearchedTechnologies(force) -- reset_recipes() locked tech-locked recipes, see function comment
-    migrateOrphanedDroidsAndBuildings(force) -- re-register buildings and adopt orphaned droids (see function comment)
+    local adopted_count = migrateOrphanedDroidsAndBuildings(force) -- re-register buildings and adopt orphaned droids (see function comment)
+    -- consolidate the many small squads adoption creates, so they can reach hunting size and fight
+    if adopted_count and adopted_count > 0 then consolidateMigratedSquads(force) end
 end
 
 
