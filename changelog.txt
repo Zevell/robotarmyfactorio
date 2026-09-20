@@ -1,6 +1,15 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.4.31
 Date: 2026.09.21
+  Notice:
+    - This is a fork of Robot Army by Kyranzor, published under the name robotarmy-forked with his
+      blessing pending upstream review. Original mod: https://mods.factorio.com/mod/robotarmy
+    - Saves made with the original mod will migrate automatically on first load: buildings are
+      re-registered and orphaned droids rejoin squads.
+---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Version: 2.4.31
+Date: 2026.09.21
   Changes:
     - Added automatic migration for existing saves: when the mod is first added to a save that
       already has droids and buildings placed, all droid assemblers, guard stations, settings
