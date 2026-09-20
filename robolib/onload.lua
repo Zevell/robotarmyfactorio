@@ -32,11 +32,12 @@ end
 -- does not re-apply unlock effects for already-researched technologies, so recipes for techs that
 -- were researched before the migration would stay locked (empty recipe menu on assemblers).
 -- this re-enables every recipe unlocked by a technology the force has already researched.
+-- note: in Factorio 2.0 the effects list lives on LuaTechnology.prototype, not the technology.
 function reEnableRecipesForResearchedTechnologies(force)
     local enabled_count = 0
     for _, tech in pairs(force.technologies) do
         if tech.researched then
-            for _, effect in pairs(tech.effects) do
+            for _, effect in pairs(tech.prototype.effects) do
                 if effect.type == "unlock-recipe" and force.recipes[effect.recipe] then
                     if not force.recipes[effect.recipe].enabled then
                         force.recipes[effect.recipe].enabled = true
