@@ -118,11 +118,25 @@ function migrateOrphanedDroidsAndBuildings(force)
             end
         end
 
-        -- adopt orphaned droids into squads, only when the automated squad behaviours are enabled
+        -- adopt orphaned droids into squads, only when the automated squad behaviours are enabled.
+        -- we cannot trust storage.units alone: a droid whose squad was disbanded (for example the
+        -- "rogue squad" disband path deletes the squad without clearing storage.units) stays
+        -- tracked forever but belongs to no live squad, and would never be re-adopted. so instead
+        -- we collect the members of every live squad and adopt any squad-capable droid not in one.
         if not script.active_mods["Unit_Controll"] then
+            local droidsInLiveSquads = {}
+            for _, squad in pairs(storage.Squads[force_name]) do
+                if squad and not squad.deleted then
+                    for _, soldier in pairs(squad.members) do
+                        if soldier and soldier.valid then
+                            droidsInLiveSquads[soldier.unit_number] = true
+                        end
+                    end
+                end
+            end
             local droids = surface.find_entities_filtered{type = "unit", force = force, name = squadCapable}
             for _, droid in pairs(droids) do
-                if not storage.units[droid.unit_number] then
+                if not droidsInLiveSquads[droid.unit_number] then
                     processSpawnedDroid(droid)
                     adopted = adopted + 1
                 end
@@ -145,10 +159,11 @@ end
 -- squad size will never attack, and merging in normal play only happens between squads near the
 -- same assembler, so these fragments can sit around forever. this consolidates them: every
 -- squad is merged into the nearest other squad, largest first, until nothing more can combine.
--- distance cap for migration-time merges: merging squads whose members are far apart would get
--- the far members kicked out of the merged squad by validateSquadIntegrity (they orphan again),
--- so only pool squads within this range of each other
-MIGRATION_MERGE_MAX_DISTANCE = 150
+-- how far away an idle squad may be from the squad it is being packed into during migration.
+-- members beyond the unit-group kick-out radius are teleported to the merged group afterwards
+-- (same as the mod's own stuck-droid teleport fix), so distance no longer causes orphaning.
+-- the cap just stops droids being teleported half way across the map.
+MIGRATION_MERGE_MAX_DISTANCE = 500
 
 -- migration helper: adoption joins each orphan to the nearest squad (or makes a new one), which
 -- leaves lots of small squads scattered around the assemblers. small squads below the hunting
@@ -159,6 +174,7 @@ MIGRATION_MERGE_MAX_DISTANCE = 150
 function consolidateMigratedSquads(force)
     local merged_count = 0
     local merging = true
+    local first_pass = true
     while merging do
         merging = false
         -- build a fresh list each pass, squads get deleted as they merge away
@@ -166,9 +182,24 @@ function consolidateMigratedSquads(force)
         for _, squad in pairs(storage.Squads[force.name]) do
             if squad and not squad.deleted and squad.numMembers and squad.numMembers > 0
                 and (squad.command.type == commands.assemble or squad.command.type == commands.hunt) then
-                table.insert(squads, squad)
+                -- make sure the squad has a valid unit group before trying to merge it. at migration
+                -- time the squad's normal update tick has not run yet, so unit groups stored in the
+                -- save file have not been recreated yet, and merging needs a valid group on both sides
+                if not squad.unitGroup or not squad.unitGroup.valid then
+                    squad = validateSquadIntegrity(squad)
+                end
+                if squad and not squad.deleted and squad.unitGroup and squad.unitGroup.valid then
+                    if first_pass then
+                        -- log the candidates so consolidation problems can be diagnosed from the log
+                        LOGGER.log(string.format("Migration consolidation candidate: squad %d size %d cmd %d at (%d,%d)",
+                                                 squad.squadID, squad.numMembers, squad.command.type,
+                                                 squad.unitGroup.position.x, squad.unitGroup.position.y))
+                    end
+                    table.insert(squads, squad)
+                end
             end
         end
+        first_pass = false
         -- largest first so big squads absorb the small ones, keeping their unit group positions
         table.sort(squads, function(a, b) return a.numMembers > b.numMembers end)
         for i, squad in pairs(squads) do
@@ -193,6 +224,19 @@ function consolidateMigratedSquads(force)
                     if merged then
                         merged_count = merged_count + 1
                         merging = true -- something merged, another pass might find more
+                        -- members further than the kick-out radius from the merged group position
+                        -- would be kicked out by squad validation (and orphaned again) if they cannot
+                        -- be teleported, so teleport them to the group here, same as the mod's own
+                        -- stuck-droid teleport fix does
+                        if merged.unitGroup and merged.unitGroup.valid then
+                            for _, soldier in pairs(merged.members) do
+                                if soldier and soldier.valid
+                                    and util.distance(soldier.position, merged.unitGroup.position)
+                                        > SQUAD_UNITGROUP_FAILURE_DISTANCE_ESTIMATE then
+                                    teleportSoldierToUnitGroup(soldier, merged.unitGroup)
+                                end
+                            end
+                        end
                     end
                 end
             end
@@ -215,8 +259,9 @@ function migrateForce(fkey, force)
     migrateDroidAssemblersTo_0_2_4(force)
     reEnableRecipesForResearchedTechnologies(force) -- reset_recipes() locked tech-locked recipes, see function comment
     local adopted_count = migrateOrphanedDroidsAndBuildings(force) -- re-register buildings and adopt orphaned droids (see function comment)
-    -- consolidate the many small squads adoption creates, so they can reach hunting size and fight
-    if adopted_count and adopted_count > 0 then consolidateMigratedSquads(force) end
+    -- consolidate the many small squads adoption creates, and any leftover under-strength idle
+    -- squads from an earlier migration run, so they can reach hunting size and fight
+    consolidateMigratedSquads(force)
 end
 
 

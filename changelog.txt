@@ -1,6 +1,19 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.4.31
 Date: 2026.09.21
+  Bugfixes:
+    - Migration now rebuilds squad membership from the live squad lists instead of trusting the
+      stored unit registry, so droids whose squads were disbanded by unit-group failure recovery
+      are re-adopted on the next migration pass instead of standing idle forever
+    - Squad consolidation after migration now recreates stale unit groups before merging, so the
+      small squads created by adoption are actually merged up to hunting size and can respond to
+      Quick Reaction Force events
+    - Merging during migration teleports far-away members to the merged squad (same as the mod's
+      stuck-droid fix), preventing them from being kicked out again by squad validation
+---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Version: 2.4.31
+Date: 2026.09.21
   Notice:
     - This is a fork of Robot Army by Kyranzor, published under the name robotarmy-forked with his
       blessing pending upstream review. Original mod: https://mods.factorio.com/mod/robotarmy
