@@ -27,6 +27,31 @@ end
 -- to an existing save), the storage tables start out empty, so all placed buildings are untracked
 -- and deployed droids are orphaned stragglers with no squad. this re-registers the buildings and
 -- adopts orphaned droids into squads, mirroring what happens when they are first placed/spawned.
+-- migration helper: runOnceCheck calls force.reset_recipes() when storage is fresh, which resets
+-- every recipe to its prototype default. tech-locked recipes default to disabled, and the engine
+-- does not re-apply unlock effects for already-researched technologies, so recipes for techs that
+-- were researched before the migration would stay locked (empty recipe menu on assemblers).
+-- this re-enables every recipe unlocked by a technology the force has already researched.
+function reEnableRecipesForResearchedTechnologies(force)
+    local enabled_count = 0
+    for _, tech in pairs(force.technologies) do
+        if tech.researched then
+            for _, effect in pairs(tech.effects) do
+                if effect.type == "unlock-recipe" and force.recipes[effect.recipe] then
+                    if not force.recipes[effect.recipe].enabled then
+                        force.recipes[effect.recipe].enabled = true
+                        enabled_count = enabled_count + 1
+                    end
+                end
+            end
+        end
+    end
+    if enabled_count > 0 then
+        LOGGER.log(string.format("Migration for force %s: re-enabled %d recipe(s) unlocked by researched technologies",
+                                 force.name, enabled_count))
+    end
+end
+
 function migrateOrphanedDroidsAndBuildings(force)
     local force_name = force.name
     local adopted = 0
@@ -120,6 +145,7 @@ function migrateForce(fkey, force)
     end
 
     migrateDroidAssemblersTo_0_2_4(force)
+    reEnableRecipesForResearchedTechnologies(force) -- reset_recipes() locked tech-locked recipes, see function comment
     migrateOrphanedDroidsAndBuildings(force) -- re-register buildings and adopt orphaned droids (see function comment)
 end
 

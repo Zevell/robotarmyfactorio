@@ -6,6 +6,8 @@ Date: 2026.09.21
       already has droids and buildings placed, all droid assemblers, guard stations, settings
       modules, counters and loot chests are re-registered, and orphaned deployed droids are
       adopted into squads instead of standing idle
+    - Re-enabled recipes unlocked by already-researched technologies during the same migration,
+      fixing empty recipe menus and the 'no valid recipes' icon on assemblers and guard stations
 ---------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 Version: 2.4.30
