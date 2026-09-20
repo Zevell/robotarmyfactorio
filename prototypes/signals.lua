@@ -1,4 +1,4 @@
-local ICONPATH = "__robotarmy__/graphics/icons/"
+local ICONPATH = "__robotarmy-forked__/graphics/icons/"
 
 data:extend(
 {

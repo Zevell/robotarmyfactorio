@@ -1,4 +1,4 @@
-local TECHPATH = "__robotarmy__/graphics/technology/"
+local TECHPATH = "__robotarmy-forked__/graphics/technology/"
 
 data:extend({
 

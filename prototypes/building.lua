@@ -1,5 +1,5 @@
-local ICONPATH = "__robotarmy__/graphics/icons/"
-local BUILPATH = "__robotarmy__/graphics/entity/buildings/"
+local ICONPATH = "__robotarmy-forked__/graphics/icons/"
+local BUILPATH = "__robotarmy-forked__/graphics/entity/buildings/"
 
 require("config.config")
 

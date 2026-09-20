@@ -1,6 +1,6 @@
-local ICONPATH = "__robotarmy__/graphics/icons/"
-local BOTPATH = "__robotarmy__/graphics/entity/bots/"
-local BUILPATH = "__robotarmy__/graphics/entity/buildings/"
+local ICONPATH = "__robotarmy-forked__/graphics/icons/"
+local BOTPATH = "__robotarmy-forked__/graphics/entity/bots/"
+local BUILPATH = "__robotarmy-forked__/graphics/entity/buildings/"
 
 -- use the base game's power armour animations/sprites for the droids and terminators
 --require("prototypes.droid-animations")
