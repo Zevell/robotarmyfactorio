@@ -7,5 +7,19 @@ data:extend({
     minimum_value = 0,
     maximum_value = 500,
     order = "a[qrf]"
+  },
+  {
+    type = "bool-setting",
+    name = "robotarmy-qrf-alert-enabled",
+    setting_type = "runtime-global",
+    default_value = true,
+    order = "b[qrf-alert]"
+  },
+  {
+    type = "bool-setting",
+    name = "robotarmy-squad-death-messages",
+    setting_type = "runtime-global",
+    default_value = true,
+    order = "c[squad-death]"
   }
 })
