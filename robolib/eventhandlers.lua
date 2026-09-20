@@ -90,11 +90,16 @@ function handleOnEntityDied(event)
     end
     
     local qrf_activated_count = 0
+    -- QRF: optional setting to only respond with squads that have reached the minimum squad size,
+    -- otherwise even a squad of 1 leftover droid will respond to building destruction
+    local size_setting = settings.global["robotarmy-qrf-respect-squad-size"]
+    local respect_squad_size = size_setting and size_setting.value or false
     for _, squad in pairs(squads) do
         if squad and squad.unitGroup and squad.unitGroup.valid and squad.unitGroup.position then
             local distance = util.distance(squad.unitGroup.position, pos)
             if QRF_DEBUG_ENABLED then game.print("[QRF DEBUG] Squad " .. squad.squadID .. " distance: " .. distance .. " (max: " .. qrf_distance .. ")") end
-            if distance <= qrf_distance then
+            local squad_size_ok = not respect_squad_size or (squad.numMembers or 0) >= getSquadHuntSize(squad.force)
+            if distance <= qrf_distance and squad_size_ok then
                 -- make sure the squad has a command table with a dest we can save and restore later
                 if not squad.command or not squad.command.dest then
                     if QRF_DEBUG_ENABLED then game.print("[QRF DEBUG] Squad " .. squad.squadID .. " has no command state, skipping QRF activation") end

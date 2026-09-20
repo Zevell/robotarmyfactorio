@@ -21,5 +21,12 @@ data:extend({
     setting_type = "runtime-global",
     default_value = true,
     order = "c[squad-death]"
+  },
+  {
+    type = "bool-setting",
+    name = "robotarmy-qrf-respect-squad-size",
+    setting_type = "runtime-global",
+    default_value = false,
+    order = "d[qrf-size]"
   }
 })

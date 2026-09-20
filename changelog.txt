@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.4.30
+Date: 2026.09.21
+  Changes:
+    - Added "QRF Strict Squad Size" mod setting (off by default) - when enabled, QRF only responds
+      to building destruction with squads that have reached the hunting squad size, instead of
+      sending tiny squads of 1-2 leftover droids
+---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 Version: 2.4.29
 Date: 2026.09.21
   Changes:
