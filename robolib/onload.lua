@@ -22,6 +22,96 @@ function global_ensureTablesExist()
 end
 
 
+
+-- migration helper: when this mod takes over from the original robotarmy mod (or is first added
+-- to an existing save), the storage tables start out empty, so all placed buildings are untracked
+-- and deployed droids are orphaned stragglers with no squad. this re-registers the buildings and
+-- adopts orphaned droids into squads, mirroring what happens when they are first placed/spawned.
+function migrateOrphanedDroidsAndBuildings(force)
+    local force_name = force.name
+    local adopted = 0
+    local registered = 0
+
+    if not storage.settingsModule then storage.settingsModule = {} end
+    if not storage.units then storage.units = {} end
+
+    for _, surface in pairs(game.surfaces) do
+        -- re-register droid assemblers
+        local assemblers = surface.find_entities_filtered{name = "droid-assembling-machine", force = force}
+        for _, assembler in pairs(assemblers) do
+            if not storage.DroidAssemblers[force_name] or not storage.DroidAssemblers[force_name][assembler.unit_number] then
+                handleDroidAssemblerPlaced({entity = assembler})
+                registered = registered + 1
+            end
+        end
+
+        -- re-register guard stations, avoiding duplicate entries for the same station
+        local stations = surface.find_entities_filtered{name = "droid-guard-station", force = force}
+        for _, station in pairs(stations) do
+            local known = false
+            if storage.droidGuardStations[force_name] then
+                for _, tracked in pairs(storage.droidGuardStations[force_name]) do
+                    if tracked.unit_number == station.unit_number then known = true end
+                end
+            end
+            if not known then
+                handleGuardStationPlaced({entity = station})
+                registered = registered + 1
+            end
+        end
+
+        -- re-register the single-per-force buildings, same rules as when they are placed by hand
+        local chests = surface.find_entities_filtered{name = "loot-chest", force = force}
+        for _, chest in pairs(chests) do
+            if not storage.lootChests[force_name] or not storage.lootChests[force_name].valid then
+                handleBuiltLootChest({entity = chest})
+                registered = registered + 1
+            end
+        end
+
+        local settingsModules = surface.find_entities_filtered{name = "droid-settings", force = force}
+        for _, settingsModule in pairs(settingsModules) do
+            if not storage.settingsModule[force_name] or not storage.settingsModule[force_name].valid then
+                handleBuiltDroidSettings({entity = settingsModule})
+                registered = registered + 1
+            end
+        end
+
+        -- re-register droid counters, avoiding duplicate entries for the same counter
+        local counters = surface.find_entities_filtered{name = "droid-counter", force = force}
+        for _, counter in pairs(counters) do
+            local known = false
+            if storage.droidCounters[force_name] then
+                for _, tracked in pairs(storage.droidCounters[force_name]) do
+                    if tracked.unit_number == counter.unit_number then known = true end
+                end
+            end
+            if not known then
+                handleBuiltDroidCounter({entity = counter})
+                registered = registered + 1
+            end
+        end
+
+        -- adopt orphaned droids into squads, only when the automated squad behaviours are enabled
+        if not script.active_mods["Unit_Controll"] then
+            local droids = surface.find_entities_filtered{type = "unit", force = force, name = squadCapable}
+            for _, droid in pairs(droids) do
+                if not storage.units[droid.unit_number] then
+                    processSpawnedDroid(droid)
+                    adopted = adopted + 1
+                end
+            end
+        end
+    end
+
+    if adopted > 0 or registered > 0 then
+        LOGGER.log(string.format("Migration for force %s: registered %d building(s), adopted %d orphaned droid(s) into squads",
+                                 force_name, registered, adopted))
+        Game.print_force(force, string.format("Robot Army: re-registered %d building(s) and adopted %d droid(s) back into squads",
+                                              registered, adopted))
+    end
+end
+
 function migrateForce(fkey, force)
     LOGGER.log(string.format("Migrating force %s...", force.name))
     global_fixupTickTablesForForceName(force.name)
@@ -30,6 +120,7 @@ function migrateForce(fkey, force)
     end
 
     migrateDroidAssemblersTo_0_2_4(force)
+    migrateOrphanedDroidsAndBuildings(force) -- re-register buildings and adopt orphaned droids (see function comment)
 end
 
 

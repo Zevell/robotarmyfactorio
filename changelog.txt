@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.4.31
+Date: 2026.09.21
+  Changes:
+    - Added automatic migration for existing saves: when the mod is first added to a save that
+      already has droids and buildings placed, all droid assemblers, guard stations, settings
+      modules, counters and loot chests are re-registered, and orphaned deployed droids are
+      adopted into squads instead of standing idle
+---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 Version: 2.4.30
 Date: 2026.09.21
   Changes:
