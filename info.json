@@ -6,7 +6,7 @@
 	"license": "MIT",
 	"contact": "kyranzor@gmail.com",
 	"homepage": "https://github.com/kyranf/robotarmyfactorio",
-	"description": "Manufacture and deploy automated robot soldiers to attack your foes and defend your factory! This is a fork of Robot Army by Kyranzor (https://mods.factorio.com/mod/robotarmy - source: https://github.com/kyranf/robotarmyfactorio) with additional fixes and settings: fixes the invalid commandable crash when droids die during QRF responses, adds settings to toggle the QRF destruction alert and squad destroyed messages, and adds an optional strict squad size rule for QRF responses. When migrating an existing save from the original mod, squads are rebuilt automatically on first load.",
+	"description": "Manufacture and deploy automated robot soldiers to attack your foes and defend your factory! This is a maintained fork of Robot Army by Kyranzor (https://mods.factorio.com/mod/robotarmy - source: https://github.com/kyranf/robotarmyfactorio), credited as the original author. Main difference from the original: switching from the original mod (or adding this one to an existing save) no longer strands your army - on first load all droid assemblers, guard stations and other mod buildings are re-registered, deployed droids are automatically re-adopted into squads and consolidated back up to strength, and recipes unlocked by your research are re-enabled, so existing saves keep working as a drop-in replacement.",
     "dependencies": [
     	"base >= 2.0.0",
     	"? Unit_Controll >= 2.0.3",
