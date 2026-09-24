@@ -77,7 +77,9 @@ function migrateOrphanedDroidsAndBuildings(force)
             local known = false
             if storage.droidGuardStations[force_name] then
                 for _, tracked in pairs(storage.droidGuardStations[force_name]) do
-                    if tracked.unit_number == station.unit_number then known = true end
+                    -- check tracked.valid first: entity references in storage become stale when mods
+                    -- are added or removed, and reading .unit_number on a stale entity crashes
+                    if tracked.valid and tracked.unit_number == station.unit_number then known = true end
                 end
             end
             if not known then
@@ -109,7 +111,9 @@ function migrateOrphanedDroidsAndBuildings(force)
             local known = false
             if storage.droidCounters[force_name] then
                 for _, tracked in pairs(storage.droidCounters[force_name]) do
-                    if tracked.unit_number == counter.unit_number then known = true end
+                    -- check tracked.valid first: entity references in storage become stale when mods
+                    -- are added or removed, and reading .unit_number on a stale entity crashes
+                    if tracked.valid and tracked.unit_number == counter.unit_number then known = true end
                 end
             end
             if not known then

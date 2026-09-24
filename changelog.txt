@@ -10,6 +10,9 @@ Date: 2026.09.21
       Quick Reaction Force events
     - Merging during migration teleports far-away members to the merged squad (same as the mod's
       stuck-droid fix), preventing them from being kicked out again by squad validation
+    - Fixed a crash when loading a save after installing or removing any other mod: the migration
+      could read .unit_number on stale entity references left in storage, which throws when entity
+      references have gone invalid across a mod-configuration change
 ---------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 Version: 2.4.31
